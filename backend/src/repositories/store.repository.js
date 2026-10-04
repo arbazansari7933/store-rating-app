@@ -24,29 +24,27 @@ export async function findById(id) {
   return rows[0] || null;
 }
 
-export async function listStores({
-  search,
-  sortBy = 'name',
-  sortOrder = 'asc',
-  page = 1,
-  limit = 10,
-  userId = null,
-}) {
+export async function listStores({ search, name, email, address, sortBy = 'name', sortOrder = 'asc', page = 1, limit = 10, userId = null }) {
   const values = [];
   const conditions = [];
   if (search) {
     values.push(`%${search}%`);
-    conditions.push(
-      `(s.name ILIKE $${values.length} OR s.email ILIKE $${values.length} OR s.address ILIKE $${values.length})`
-    );
+    conditions.push(`(s.name ILIKE $${values.length} OR s.address ILIKE $${values.length})`);
+  }
+  if (name) {
+    values.push(`%${name}%`);
+    conditions.push(`s.name ILIKE $${values.length}`);
+  }
+  if (email) {
+    values.push(`%${email}%`);
+    conditions.push(`s.email ILIKE $${values.length}`);
+  }
+  if (address) {
+    values.push(`%${address}%`);
+    conditions.push(`s.address ILIKE $${values.length}`);
   }
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  const allowed = {
-    name: 's.name',
-    email: 's.email',
-    address: 's.address',
-    overall_rating: 'overall_rating',
-  };
+  const allowed = { name: 's.name', email: 's.email', address: 's.address', overall_rating: 'overall_rating' };
   const order = allowed[sortBy] || allowed.name;
   const offset = (page - 1) * limit;
   const count = await query(`SELECT COUNT(*)::int AS total FROM stores s ${where}`, values);

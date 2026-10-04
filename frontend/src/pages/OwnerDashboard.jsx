@@ -57,10 +57,8 @@ export default function OwnerDashboard() {
   }, [sort]);
 
   const average = data.stores.length
-    ? data.stores.reduce(
-        (sum, store) => sum + Number(store.average_rating || 0),
-        0
-      ) / data.stores.length
+    ? data.stores.reduce((sum, store) => sum + Number(store.average_rating || 0), 0) /
+      data.stores.length
     : 0;
 
   return (
@@ -111,10 +109,7 @@ export default function OwnerDashboard() {
             <div className="owner-store-grid">
               {data.stores.length ? (
                 data.stores.map((store) => (
-                  <article
-                    className="performance-card"
-                    key={store.id}
-                  >
+                  <article className="performance-card" key={store.id}>
                     <div className="store-top">
                       <div className="store-icon">
                         <Badge tone="blue">Store</Badge>
@@ -127,19 +122,12 @@ export default function OwnerDashboard() {
                     </div>
 
                     <div className="performance-value">
-                      <strong>
-                        {Number(store.average_rating).toFixed(1)}
-                      </strong>
+                      <strong>{Number(store.average_rating).toFixed(1)}</strong>
 
-                      <RatingStars
-                        value={Number(store.average_rating)}
-                        size="lg"
-                      />
+                      <RatingStars value={Number(store.average_rating)} size="lg" />
                     </div>
 
-                    <span className="subtle">
-                      {store.rating_count} submitted ratings
-                    </span>
+                    <span className="subtle">{store.rating_count} submitted ratings</span>
                   </article>
                 ))
               ) : (
@@ -199,8 +187,7 @@ export default function OwnerDashboard() {
                   {
                     key: 'updated_at',
                     label: 'Updated',
-                    render: (row) =>
-                      new Date(row.updated_at).toLocaleDateString(),
+                    render: (row) => new Date(row.updated_at).toLocaleDateString(),
                   },
                 ]}
                 rows={data.ratings}

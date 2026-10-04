@@ -1,41 +1,20 @@
+const ALLOWED_SORT = ['name', 'email', 'address', 'role', 'created_at', 'overall_rating'];
+
+const clean = (value) => String(value ?? '').trim();
+
 export function listQuerySchema(query) {
-  const allowedSort = [
-    'name',
-    'email',
-    'address',
-    'role',
-    'created_at',
-    'overall_rating',
-    'owner_rating',
-    'store_name',
-    'user_name',
-    'rating',
-    'updated_at',
-  ];
-
-  const sortBy = allowedSort.includes(query.sortBy)
-    ? query.sortBy
-    : 'created_at';
-
-  const sortOrder =
-    String(query.sortOrder).toLowerCase() === 'desc'
-      ? 'desc'
-      : 'asc';
-
-  const page = Math.max(
-    Number.parseInt(query.page, 10) || 1,
-    1
-  );
-
-  const limit = Math.min(
-    Math.max(Number.parseInt(query.limit, 10) || 10, 1),
-    100
-  );
+  const sortBy = ALLOWED_SORT.includes(query.sortBy) ? query.sortBy : 'created_at';
+  const sortOrder = String(query.sortOrder).toLowerCase() === 'desc' ? 'desc' : 'asc';
+  const page = Math.max(Number.parseInt(query.page, 10) || 1, 1);
+  const limit = Math.min(Math.max(Number.parseInt(query.limit, 10) || 10, 1), 100);
 
   return {
     value: {
-      search: String(query.search || '').trim(),
-      role: String(query.role || '').toUpperCase(),
+      search: clean(query.search),
+      name: clean(query.name),
+      email: clean(query.email),
+      address: clean(query.address),
+      role: clean(query.role).toUpperCase(),
       sortBy,
       sortOrder,
       page,

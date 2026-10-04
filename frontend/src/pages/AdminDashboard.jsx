@@ -4,94 +4,80 @@ import {
   createUser,
   getStats,
   getStores,
-  getUsers,
   getUserDetails,
+  getUsers,
 } from '../api/admin.api';
 import Alert from '../components/Alert';
+import Badge from '../components/Badge';
 import Button from '../components/Button';
 import Field from '../components/Field';
-import Modal from '../components/Modal';
-import SortControls from '../components/SortControls';
-import Table from '../components/Table';
-import PageHeader from '../components/PageHeader';
-import StatCard from '../components/StatCard';
 import LoadingState from '../components/LoadingState';
-import Badge from '../components/Badge';
+import Modal from '../components/Modal';
+import PageHeader from '../components/PageHeader';
+import SortControls from '../components/SortControls';
+import StatCard from '../components/StatCard';
+import Table from '../components/Table';
 import { getErrorMessage } from '../utils/error';
 import { validateUserForm } from '../utils/validation';
 
-const emptyUser = {
-  name: '',
-  email: '',
-  address: '',
-  password: '',
-  role: 'USER',
-};
+const emptyUser = { name: '', email: '', address: '', password: '', role: 'USER' };
+const emptyStore = { name: '', email: '', address: '', ownerId: '' };
+const emptyUserFilters = { name: '', email: '', address: '', role: '' };
+const emptyStoreFilters = { name: '', email: '', address: '' };
 
-const emptyStore = {
-  name: '',
-  email: '',
-  address: '',
-  ownerId: '',
-};
+const roleLabel = { USER: 'Normal User', OWNER: 'Store Owner', ADMIN: 'Administrator' };
+const roleTone = { ADMIN: 'dark', OWNER: 'blue', USER: 'neutral' };
+
+function FilterInput({ value, onChange, placeholder }) {
+  return (
+    <div className="search-wrap compact-search">
+      <span>⌕</span>
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({
-    total_users: 0,
-    total_stores: 0,
-    total_ratings: 0,
-  });
-
+  const [stats, setStats] = useState({ total_users: 0, total_stores: 0, total_ratings: 0 });
   const [users, setUsers] = useState([]);
   const [stores, setStores] = useState([]);
-
-  const [userQuery, setUserQuery] = useState('');
-  const [storeQuery, setStoreQuery] = useState('');
-  const [userRole, setUserRole] = useState('');
-
-  const [sortUsers, setSortUsers] = useState({
-    sortBy: 'created_at',
-    sortOrder: 'desc',
-  });
-
-  const [sortStores, setSortStores] = useState({
-    sortBy: 'name',
-    sortOrder: 'asc',
-  });
-
+  const [owners, setOwners] = useState([]);
+  const [userFilters, setUserFilters] = useState(emptyUserFilters);
+  const [storeFilters, setStoreFilters] = useState(emptyStoreFilters);
+  const [sortUsers, setSortUsers] = useState({ sortBy: 'created_at', sortOrder: 'desc' });
+  const [sortStores, setSortStores] = useState({ sortBy: 'name', sortOrder: 'asc' });
   const [modal, setModal] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
-
   const [userForm, setUserForm] = useState(emptyUser);
   const [storeForm, setStoreForm] = useState(emptyStore);
-
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  async function load() {
-    setLoading(true);
-
+  async function loadOwners() {
     try {
-      const [statsResponse, usersResponse, storesResponse] =
-        await Promise.all([
-          getStats(),
-          getUsers({
-            search: userQuery,
-            role: userRole,
-            ...sortUsers,
-            limit: 100,
-          }),
-          getStores({
-            search: storeQuery,
-            ...sortStores,
-            limit: 100,
-          }),
-        ]);
+      const response = await getUsers({
+        role: 'OWNER',
+        sortBy: 'name',
+        sortOrder: 'asc',
+        limit: 100,
+      });
+      setOwners(response.data.data.rows);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+  }
 
-      setStats(statsResponse.data.data);
-      setUsers(usersResponse.data.data.rows);
-      setStores(storesResponse.data.data.rows);
+  async function load() {
+    try {
+      const [s, u, st] = await Promise.all([
+        getStats(),
+        getUsers({ ...userFilters, ...sortUsers, limit: 100 }),
+        getStores({ ...storeFilters, ...sortStores, limit: 100 }),
+      ]);
+      setStats(s.data.data);
+      setUsers(u.data.data.rows);
+      setStores(st.data.data.rows);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -100,29 +86,26 @@ export default function AdminDashboard() {
   }
 
   useEffect(() => {
-    const timer = setTimeout(load, 180);
+    loadOwners();
+  }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(load, 250);
     return () => clearTimeout(timer);
-  }, [userQuery, userRole, storeQuery, sortUsers, sortStores]);
+  }, [userFilters, storeFilters, sortUsers, sortStores]);
 
-  async function submitUser(event) {
-    event.preventDefault();
-
+  async function submitUser(e) {
+    e.preventDefault();
     const validation = validateUserForm(userForm, true);
-
-    if (validation) {
-      setError(validation);
-      return;
-    }
+    if (validation) return setError(validation);
 
     setSaving(true);
     setError('');
-
     try {
       await createUser(userForm);
       setModal(null);
       setUserForm(emptyUser);
-      await load();
+      await Promise.all([load(), loadOwners()]);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -130,22 +113,17 @@ export default function AdminDashboard() {
     }
   }
 
-  async function submitStore(event) {
-    event.preventDefault();
-
-    if (storeForm.name.trim().length < 20) {
-      setError('Store name must be at least 20 characters.');
-      return;
+  async function submitStore(e) {
+    e.preventDefault();
+    const name = storeForm.name.trim();
+    if (name.length < 2 || name.length > 120) {
+      return setError('Store name must be between 2 and 120 characters.');
     }
-
-    if (!storeForm.address.trim()) {
-      setError('Store address is required.');
-      return;
-    }
+    if (!storeForm.address.trim()) return setError('Store address is required.');
+    if (storeForm.address.length > 400) return setError('Address cannot exceed 400 characters.');
 
     setSaving(true);
     setError('');
-
     try {
       await createStore(storeForm);
       setModal(null);
@@ -158,13 +136,10 @@ export default function AdminDashboard() {
     }
   }
 
-  const owners = users.filter((user) => user.role === 'OWNER');
-
   async function openUserDetails(user) {
     setError('');
     setSelectedUser(null);
     setModal('user-details');
-
     try {
       const response = await getUserDetails(user.id);
       setSelectedUser(response.data.data);
@@ -173,6 +148,9 @@ export default function AdminDashboard() {
       setError(getErrorMessage(err));
     }
   }
+
+  const updateUserFilter = (key) => (value) => setUserFilters((f) => ({ ...f, [key]: value }));
+  const updateStoreFilter = (key) => (value) => setStoreFilters((f) => ({ ...f, [key]: value }));
 
   return (
     <div className="dashboard">
@@ -192,7 +170,6 @@ export default function AdminDashboard() {
             >
               Add user
             </Button>
-
             <Button
               icon="plus"
               onClick={() => {
@@ -209,26 +186,9 @@ export default function AdminDashboard() {
       <Alert message={error} />
 
       <div className="stat-grid-v2">
-        <StatCard
-          icon="users"
-          label="Total users"
-          value={stats.total_users}
-          hint="All registered accounts"
-        />
-
-        <StatCard
-          icon="store"
-          label="Total stores"
-          value={stats.total_stores}
-          hint="Registered locations"
-        />
-
-        <StatCard
-          icon="star"
-          label="Total ratings"
-          value={stats.total_ratings}
-          hint="Submitted by users"
-        />
+        <StatCard icon="users" label="Total users" value={stats.total_users} hint="All registered accounts" />
+        <StatCard icon="store" label="Total stores" value={stats.total_stores} hint="Registered locations" />
+        <StatCard icon="star" label="Total ratings" value={stats.total_ratings} hint="Submitted by users" />
       </div>
 
       {loading ? (
@@ -239,20 +199,12 @@ export default function AdminDashboard() {
             <div className="section-title">
               <div>
                 <h2>Stores</h2>
-                <p>Search and sort every registered store.</p>
+                <p>Filter by name, email or address, and sort any column.</p>
               </div>
-
               <div className="filter-row">
-                <div className="search-wrap compact-search">
-                  <span>⌕</span>
-
-                  <input
-                    value={storeQuery}
-                    onChange={(event) => setStoreQuery(event.target.value)}
-                    placeholder="Search stores"
-                  />
-                </div>
-
+                <FilterInput value={storeFilters.name} onChange={updateStoreFilter('name')} placeholder="Filter by name" />
+                <FilterInput value={storeFilters.email} onChange={updateStoreFilter('email')} placeholder="Filter by email" />
+                <FilterInput value={storeFilters.address} onChange={updateStoreFilter('address')} placeholder="Filter by address" />
                 <SortControls
                   fields={[
                     { value: 'name', label: 'Name' },
@@ -265,30 +217,18 @@ export default function AdminDashboard() {
                 />
               </div>
             </div>
-
             <div className="content-card-v2">
               <Table
                 columns={[
-                  {
-                    key: 'name',
-                    label: 'Store',
-                    render: (row) => (
-                      <div className="table-primary">
-                        <strong>{row.name}</strong>
-                        <span>{row.email}</span>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'address',
-                    label: 'Address',
-                  },
+                  { key: 'name', label: 'Name' },
+                  { key: 'email', label: 'Email' },
+                  { key: 'address', label: 'Address' },
                   {
                     key: 'overall_rating',
                     label: 'Rating',
-                    render: (row) => (
+                    render: (r) => (
                       <span className="table-rating">
-                        <span>{Number(row.overall_rating).toFixed(1)}</span>/5
+                        <span>{Number(r.overall_rating).toFixed(1)}</span>/5
                       </span>
                     ),
                   },
@@ -303,90 +243,52 @@ export default function AdminDashboard() {
             <div className="section-title">
               <div>
                 <h2>Users</h2>
-                <p>Accounts across all platform roles.</p>
+                <p>Filter by name, email, address or role, and sort any column.</p>
               </div>
-
               <div className="filter-row">
-                <div className="search-wrap compact-search">
-                  <span>⌕</span>
-
-                  <input
-                    value={userQuery}
-                    onChange={(event) => setUserQuery(event.target.value)}
-                    placeholder="Search users"
-                  />
-                </div>
-
+                <FilterInput value={userFilters.name} onChange={updateUserFilter('name')} placeholder="Filter by name" />
+                <FilterInput value={userFilters.email} onChange={updateUserFilter('email')} placeholder="Filter by email" />
+                <FilterInput value={userFilters.address} onChange={updateUserFilter('address')} placeholder="Filter by address" />
                 <select
                   className="filter-select"
-                  value={userRole}
-                  onChange={(event) => setUserRole(event.target.value)}
+                  value={userFilters.role}
+                  onChange={(e) => updateUserFilter('role')(e.target.value)}
                 >
                   <option value="">All roles</option>
                   <option value="ADMIN">Admin</option>
                   <option value="USER">Normal User</option>
                   <option value="OWNER">Store Owner</option>
                 </select>
-
                 <SortControls
                   fields={[
                     { value: 'name', label: 'Name' },
                     { value: 'email', label: 'Email' },
                     { value: 'address', label: 'Address' },
                     { value: 'role', label: 'Role' },
-                    { value: 'owner_rating', label: 'Owner rating' },
                   ]}
                   value={sortUsers}
                   onChange={setSortUsers}
                 />
               </div>
             </div>
-
             <div className="content-card-v2">
               <Table
                 columns={[
-                  {
-                    key: 'name',
-                    label: 'User',
-                    render: (row) => (
-                      <div className="table-primary">
-                        <strong>{row.name}</strong>
-                        <span>{row.email}</span>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'address',
-                    label: 'Address',
-                  },
+                  { key: 'name', label: 'Name' },
+                  { key: 'email', label: 'Email' },
+                  { key: 'address', label: 'Address' },
                   {
                     key: 'role',
                     label: 'Role',
-                    render: (row) => (
-                      <Badge
-                        tone={
-                          row.role === 'ADMIN'
-                            ? 'dark'
-                            : row.role === 'OWNER'
-                              ? 'blue'
-                              : 'neutral'
-                        }
-                      >
-                        {row.role === 'USER'
-                          ? 'Normal User'
-                          : row.role === 'OWNER'
-                            ? 'Store Owner'
-                            : 'Administrator'}
-                      </Badge>
-                    ),
+                    render: (r) => <Badge tone={roleTone[r.role]}>{roleLabel[r.role]}</Badge>,
                   },
                   {
                     key: 'owner_rating',
                     label: 'Owner rating',
-                    render: (row) =>
-                      row.role === 'OWNER' ? (
+                    render: (r) =>
+                      r.role === 'OWNER' ? (
                         <span className="table-rating">
-                          <span>{Number(row.owner_rating).toFixed(1)}</span>/5
+                          <span>{Number(r.owner_rating).toFixed(1)}</span>/5
                         </span>
                       ) : (
                         '—'
@@ -416,34 +318,22 @@ export default function AdminDashboard() {
               <span>Name</span>
               <strong>{selectedUser.name}</strong>
             </div>
-
             <div>
               <span>Email</span>
               <strong>{selectedUser.email}</strong>
             </div>
-
             <div>
               <span>Address</span>
               <strong>{selectedUser.address || '—'}</strong>
             </div>
-
             <div>
               <span>Role</span>
-              <strong>
-                {selectedUser.role === 'USER'
-                  ? 'Normal User'
-                  : selectedUser.role === 'OWNER'
-                    ? 'Store Owner'
-                    : 'Administrator'}
-              </strong>
+              <strong>{roleLabel[selectedUser.role]}</strong>
             </div>
-
             {selectedUser.role === 'OWNER' && (
               <div>
                 <span>Store rating</span>
-                <strong>
-                  {Number(selectedUser.owner_rating || 0).toFixed(1)}/5
-                </strong>
+                <strong>{Number(selectedUser.owner_rating || 0).toFixed(1)}/5</strong>
               </div>
             )}
           </div>
@@ -457,73 +347,43 @@ export default function AdminDashboard() {
           onClose={() => setModal(null)}
         >
           <form className="form" onSubmit={submitUser}>
+            <Alert message={error} />
             <Field
               label="Full name"
               value={userForm.name}
-              onChange={(event) =>
-                setUserForm({
-                  ...userForm,
-                  name: event.target.value,
-                })
-              }
+              onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
               required
             />
-
             <Field
               label="Email"
               type="email"
               value={userForm.email}
-              onChange={(event) =>
-                setUserForm({
-                  ...userForm,
-                  email: event.target.value,
-                })
-              }
+              onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
               required
             />
-
             <Field
               label="Address"
               value={userForm.address}
-              onChange={(event) =>
-                setUserForm({
-                  ...userForm,
-                  address: event.target.value,
-                })
-              }
+              onChange={(e) => setUserForm({ ...userForm, address: e.target.value })}
             />
-
             <Field
               label="Temporary password"
               type="password"
               value={userForm.password}
-              onChange={(event) =>
-                setUserForm({
-                  ...userForm,
-                  password: event.target.value,
-                })
-              }
+              onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
               required
             />
-
             <label className="field">
               <span>Role</span>
-
               <select
                 value={userForm.role}
-                onChange={(event) =>
-                  setUserForm({
-                    ...userForm,
-                    role: event.target.value,
-                  })
-                }
+                onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
               >
                 <option value="USER">Normal User</option>
                 <option value="OWNER">Store Owner</option>
                 <option value="ADMIN">Administrator</option>
               </select>
             </label>
-
             <Button loading={saving} className="full-button">
               Create user
             </Button>
@@ -538,57 +398,33 @@ export default function AdminDashboard() {
           onClose={() => setModal(null)}
         >
           <form className="form" onSubmit={submitStore}>
+            <Alert message={error} />
             <Field
               label="Store name"
               value={storeForm.name}
-              onChange={(event) =>
-                setStoreForm({
-                  ...storeForm,
-                  name: event.target.value,
-                })
-              }
+              onChange={(e) => setStoreForm({ ...storeForm, name: e.target.value })}
               required
             />
-
             <Field
               label="Store email"
               type="email"
               value={storeForm.email}
-              onChange={(event) =>
-                setStoreForm({
-                  ...storeForm,
-                  email: event.target.value,
-                })
-              }
+              onChange={(e) => setStoreForm({ ...storeForm, email: e.target.value })}
               required
             />
-
             <Field
               label="Address"
               value={storeForm.address}
-              onChange={(event) =>
-                setStoreForm({
-                  ...storeForm,
-                  address: event.target.value,
-                })
-              }
+              onChange={(e) => setStoreForm({ ...storeForm, address: e.target.value })}
               required
             />
-
             <label className="field">
               <span>Store owner</span>
-
               <select
                 value={storeForm.ownerId}
-                onChange={(event) =>
-                  setStoreForm({
-                    ...storeForm,
-                    ownerId: event.target.value,
-                  })
-                }
+                onChange={(e) => setStoreForm({ ...storeForm, ownerId: e.target.value })}
               >
                 <option value="">No owner assigned</option>
-
                 {owners.map((owner) => (
                   <option key={owner.id} value={owner.id}>
                     {owner.name}
@@ -596,7 +432,6 @@ export default function AdminDashboard() {
                 ))}
               </select>
             </label>
-
             <Button loading={saving} className="full-button">
               Create store
             </Button>

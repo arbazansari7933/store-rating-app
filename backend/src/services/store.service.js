@@ -10,11 +10,7 @@ export async function submitRating(userId, storeId, rating) {
   const store = await stores.findById(storeId);
 
   if (!store) {
-    throw new AppError(
-      'Store not found.',
-      404,
-      'STORE_NOT_FOUND'
-    );
+    throw new AppError('Store not found.', 404, 'STORE_NOT_FOUND');
   }
 
   return ratings.upsertRating({
@@ -24,18 +20,10 @@ export async function submitRating(userId, storeId, rating) {
   });
 }
 
-export async function ownerDashboard(
-  ownerId,
-  sortBy = 'updated_at',
-  sortOrder = 'desc'
-) {
+export async function ownerDashboard(ownerId, sortBy = 'updated_at', sortOrder = 'desc') {
   const ownedStores = await stores.findOwnedStores(ownerId);
 
-  const submittedRatings = await ratings.findByStoreForOwner(
-    ownerId,
-    sortBy,
-    sortOrder
-  );
+  const submittedRatings = await ratings.findByStoreForOwner(ownerId, sortBy, sortOrder);
 
   return {
     stores: ownedStores,

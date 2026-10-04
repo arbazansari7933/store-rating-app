@@ -15,11 +15,7 @@ export async function upsertRating({ userId, storeId, rating }) {
   return rows[0];
 }
 
-export async function findByStoreForOwner(
-  ownerId,
-  sortBy = 'updated_at',
-  sortOrder = 'desc'
-) {
+export async function findByStoreForOwner(ownerId, sortBy = 'updated_at', sortOrder = 'desc') {
   const allowed = {
     store_name: 's.name',
     user_name: 'u.name',
