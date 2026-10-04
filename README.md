@@ -8,18 +8,20 @@ A full-stack store rating application built for the Roxiler Systems Full Stack D
 - Backend: Node.js, Express.js
 - Database: PostgreSQL
 - Authentication: JWT, bcrypt
-- Deployment: Docker, Docker Compose, Nginx
+- Infrastructure: Docker, Docker Compose, Nginx
 
 ## Features
 
 ### Admin
+
 - Dashboard with users, stores and ratings
-- Create users, admins and stores
+- Create users, administrators and stores
 - Search and filter users/stores
 - View user and store details
-- Sort tables ASC/DESC
+- Sort tables in ascending/descending order
 
 ### Normal User
+
 - Signup and login
 - Browse and search stores
 - View store ratings
@@ -27,6 +29,7 @@ A full-stack store rating application built for the Roxiler Systems Full Stack D
 - Change password
 
 ### Store Owner
+
 - Login
 - View store average rating
 - View users who rated the store
@@ -49,7 +52,7 @@ docker-compose.yml
 - Docker Desktop
 - Git
 
-Run from the project root:
+From the project root:
 
 ```bash
 docker compose up --build
@@ -61,7 +64,7 @@ Open:
 http://localhost:5173
 ```
 
-To stop:
+To stop the application:
 
 ```bash
 docker compose down
@@ -101,13 +104,13 @@ npm install
 
 Create `.env` from `.env.example` and configure the PostgreSQL connection.
 
-Then run:
+Then start the backend:
 
 ```bash
-npm run db:migrate
-npm run db:seed
 npm run dev
 ```
+
+The backend automatically initializes the database schema and demo data when it starts.
 
 Backend:
 
@@ -126,7 +129,7 @@ npm install
 
 Create `.env` from `.env.example` and configure the backend API URL.
 
-Then run:
+Then start the frontend:
 
 ```bash
 npm run dev
@@ -165,13 +168,13 @@ Password: User@123
 
 - Name: 20–60 characters
 - Address: maximum 400 characters
-- Password: 8–16 characters, uppercase letter and special character required
+- Password: 8–16 characters with uppercase letter and special character
 - Rating: 1–5
 - Standard email validation
 
 ## Documentation
 
-Additional documentation is available in:
+Additional documentation:
 
 ```text
 docs/

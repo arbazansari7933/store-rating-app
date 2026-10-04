@@ -1,4 +1,15 @@
-const ALLOWED_SORT = ['name', 'email', 'address', 'role', 'created_at', 'overall_rating'];
+const ALLOWED_SORT = [
+  'name',
+  'email',
+  'address',
+  'role',
+  'created_at',
+  'overall_rating',
+  'store_name',
+  'user_name',
+  'rating',
+  'updated_at',
+];
 
 const clean = (value) => String(value ?? '').trim();
 
