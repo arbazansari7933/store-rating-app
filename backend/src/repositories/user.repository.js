@@ -6,7 +6,10 @@ export async function findByEmail(email) {
 }
 
 export async function findById(id) {
-  const { rows } = await query('SELECT id, name, email, address, role, created_at FROM users WHERE id = $1 LIMIT 1', [id]);
+  const { rows } = await query(
+    'SELECT id, name, email, address, role, created_at FROM users WHERE id = $1 LIMIT 1',
+    [id]
+  );
   return rows[0] || null;
 }
 
@@ -16,14 +19,17 @@ export async function findAuthById(id) {
 }
 
 export async function findDetailsById(id) {
-  const { rows } = await query(`
+  const { rows } = await query(
+    `
     SELECT u.id, u.name, u.email, u.address, u.role, u.created_at,
       COALESCE(AVG(CASE WHEN s.owner_id = u.id THEN r.rating END), 0)::numeric(3,2) AS owner_rating
     FROM users u
     LEFT JOIN stores s ON s.owner_id = u.id
     LEFT JOIN ratings r ON r.store_id = s.id
     WHERE u.id = $1
-    GROUP BY u.id`, [id]);
+    GROUP BY u.id`,
+    [id]
+  );
   return rows[0] || null;
 }
 
@@ -38,15 +44,30 @@ export async function createUser({ name, email, passwordHash, address, role }) {
 }
 
 export async function updatePassword(id, passwordHash) {
-  await query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [passwordHash, id]);
+  await query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [
+    passwordHash,
+    id,
+  ]);
 }
 
-export async function listUsers({ search, name, email, address, role, sortBy, sortOrder, page, limit }) {
+export async function listUsers({
+  search,
+  name,
+  email,
+  address,
+  role,
+  sortBy,
+  sortOrder,
+  page,
+  limit,
+}) {
   const values = [];
   const conditions = [];
   if (search) {
     values.push(`%${search}%`);
-    conditions.push(`(u.name ILIKE $${values.length} OR u.email ILIKE $${values.length} OR u.address ILIKE $${values.length})`);
+    conditions.push(
+      `(u.name ILIKE $${values.length} OR u.email ILIKE $${values.length} OR u.address ILIKE $${values.length})`
+    );
   }
   if (name) {
     values.push(`%${name}%`);
@@ -65,7 +86,13 @@ export async function listUsers({ search, name, email, address, role, sortBy, so
     conditions.push(`u.role = $${values.length}`);
   }
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  const allowed = { name: 'u.name', email: 'u.email', address: 'u.address', role: 'u.role', created_at: 'u.created_at' };
+  const allowed = {
+    name: 'u.name',
+    email: 'u.email',
+    address: 'u.address',
+    role: 'u.role',
+    created_at: 'u.created_at',
+  };
   const order = allowed[sortBy] || allowed.created_at;
   const offset = (page - 1) * limit;
 

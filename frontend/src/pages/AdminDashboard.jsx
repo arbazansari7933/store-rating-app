@@ -186,9 +186,24 @@ export default function AdminDashboard() {
       <Alert message={error} />
 
       <div className="stat-grid-v2">
-        <StatCard icon="users" label="Total users" value={stats.total_users} hint="All registered accounts" />
-        <StatCard icon="store" label="Total stores" value={stats.total_stores} hint="Registered locations" />
-        <StatCard icon="star" label="Total ratings" value={stats.total_ratings} hint="Submitted by users" />
+        <StatCard
+          icon="users"
+          label="Total users"
+          value={stats.total_users}
+          hint="All registered accounts"
+        />
+        <StatCard
+          icon="store"
+          label="Total stores"
+          value={stats.total_stores}
+          hint="Registered locations"
+        />
+        <StatCard
+          icon="star"
+          label="Total ratings"
+          value={stats.total_ratings}
+          hint="Submitted by users"
+        />
       </div>
 
       {loading ? (
@@ -202,9 +217,21 @@ export default function AdminDashboard() {
                 <p>Filter by name, email or address, and sort any column.</p>
               </div>
               <div className="filter-row">
-                <FilterInput value={storeFilters.name} onChange={updateStoreFilter('name')} placeholder="Filter by name" />
-                <FilterInput value={storeFilters.email} onChange={updateStoreFilter('email')} placeholder="Filter by email" />
-                <FilterInput value={storeFilters.address} onChange={updateStoreFilter('address')} placeholder="Filter by address" />
+                <FilterInput
+                  value={storeFilters.name}
+                  onChange={updateStoreFilter('name')}
+                  placeholder="Filter by name"
+                />
+                <FilterInput
+                  value={storeFilters.email}
+                  onChange={updateStoreFilter('email')}
+                  placeholder="Filter by email"
+                />
+                <FilterInput
+                  value={storeFilters.address}
+                  onChange={updateStoreFilter('address')}
+                  placeholder="Filter by address"
+                />
                 <SortControls
                   fields={[
                     { value: 'name', label: 'Name' },
@@ -246,9 +273,21 @@ export default function AdminDashboard() {
                 <p>Filter by name, email, address or role, and sort any column.</p>
               </div>
               <div className="filter-row">
-                <FilterInput value={userFilters.name} onChange={updateUserFilter('name')} placeholder="Filter by name" />
-                <FilterInput value={userFilters.email} onChange={updateUserFilter('email')} placeholder="Filter by email" />
-                <FilterInput value={userFilters.address} onChange={updateUserFilter('address')} placeholder="Filter by address" />
+                <FilterInput
+                  value={userFilters.name}
+                  onChange={updateUserFilter('name')}
+                  placeholder="Filter by name"
+                />
+                <FilterInput
+                  value={userFilters.email}
+                  onChange={updateUserFilter('email')}
+                  placeholder="Filter by email"
+                />
+                <FilterInput
+                  value={userFilters.address}
+                  onChange={updateUserFilter('address')}
+                  placeholder="Filter by address"
+                />
                 <select
                   className="filter-select"
                   value={userFilters.role}
